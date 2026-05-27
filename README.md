@@ -1,2 +1,5 @@
 # TÍTULO TFG
-Resumen TFG
+Este Trabajo de Fin de Grado presenta los patrones asociados al estado de salud autopercibido (ESAP) por adultos residentes en España y la mejor modelización predictiva vinculada al mismo, a partir de los datos de la Encuesta de Salud de España de 2023. Se tiene como objetivo anticipar la demanda de servicios sanitarios, facilitando su gestión.
+Se ha construido una base de datos uniendo los ficheros adulto y hogar de la encuesta. Este conjunto de datos presenta 20989 observaciones y 54 variables divididas en 3 grandes grupos: sociodemográficas, socioeconómicas y sanitarias. Se ha realizado un Análisis Clúster desarrollado sobre las componentes de un Análisis Factorial de Datos Mixtos, y se han estimado modelos de Regresión Logística Binaria, Árboles de Clasificación y Random Forest. 
+Los resultados han mostrado patrones relacionados con la limitación funcional, la estructura del hogar y el rol de cuidador, siendo la edad una de las variables con mayor peso explicativo. Random Forest ha resultado ser el modelo ganador y estable, ya que, maximizando la sensibilidad, ha conseguido detectar correctamente a los individuos con mal y buen estado de salud.
+
