@@ -1,4 +1,4 @@
-* UMBRAL DE DECISI”N;
+* UMBRAL DE DECISI√ìN;
 PROC IMPORT DATAFILE="D:\UCM\Curso 4\Resultados\Predictivo\Base_Final_Predictivo.xlsx"
     OUT=datos_tfg
     DBMS=XLSX
@@ -17,7 +17,7 @@ DATA datos_tfg;
     ELSE IF Est_Salud = "Bueno" THEN Salud_bin = 0;
 RUN;
 
-* 2. PARTICI”N TRAIN;
+* 2. PARTICI√ìN TRAIN;
 proc surveyselect data=datos_tfg
     out=particion
     samprate=0.8
@@ -47,7 +47,7 @@ data train_cv;
 run;
 
 
-* 4. TABLA VACÕA RESULTADOS;
+* 4. TABLA VAC√çA RESULTADOS;
    ========================= */
 data resultados_umbrales;
     length fold threshold 8;
@@ -56,7 +56,7 @@ data resultados_umbrales;
 run;
 
 
-* 5. MACRO M…TRICAS CON UMBRAL;
+* 5. MACRO M√âTRICAS CON UMBRAL;
 %macro calc_metrics_cv(thresh=, pred=, fold=, out=);
     data _tmp;
         set score_val;
@@ -93,14 +93,14 @@ run;
 
     %do f = 1 %to 5;
 
-        * ParticiÛn del fold;
+        * Partici√≥n del fold;
         data cv_train cv_val;
             set train_cv;
             if fold = &f then output cv_val;
             else output cv_train;
         run;
 
-        * Entrenar ·rbol en cv_train;
+        * Entrenar √°rbol en cv_train;
         proc hpsplit data=cv_train seed=12345
             maxdepth=8
             minleafsize=26
@@ -114,14 +114,14 @@ run;
             code file="D:\UCM\arbol_cv_f&f..sas";
         run;
 
-        * Aplicar ·rbol a cv_val;
+        * Aplicar √°rbol a cv_val;
         data score_val;
             set cv_val;
             %include "D:\UCM\arbol_cv_f&f..sas";
             phat = P_Salud_bin1;
         run;
 
-        * Calcular mÈtricas para cada umbral;
+        * Calcular m√©tricas para cada umbral;
         %calc_metrics_cv(thresh=0.50, pred=pred_050, fold=&f, out=m_050_f&f);
         %calc_metrics_cv(thresh=0.40, pred=pred_040, fold=&f, out=m_040_f&f);
         %calc_metrics_cv(thresh=0.36, pred=pred_036, fold=&f, out=m_036_f&f);
@@ -174,5 +174,5 @@ proc print data=tabla_umbrales_cv noobs;
         TP_medio FP_medio TN_medio FN_medio;
     format Se_media Sp_media Acc_media Error_media 6.4
            TP_medio FP_medio TN_medio FN_medio 8.1;
-    title "B˙squeda umbral decisiÛn ·Årbol final (maxdepth=8, minleafsize=26) media CV";
+    title "B√∫squeda umbral decisi√≥n √°¬Årbol final (maxdepth=8, minleafsize=26) media CV";
 run;
