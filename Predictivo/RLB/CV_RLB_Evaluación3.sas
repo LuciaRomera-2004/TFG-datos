@@ -17,7 +17,7 @@ DATA datos_tfg;
 RUN;
 
 
-* 2. PARTICIÓN TRAIN / TEST;
+* 2. PARTICIÃ“N TRAIN / TEST;
 proc surveyselect data=datos_tfg
     out=particion
     samprate=0.8
@@ -32,7 +32,7 @@ data train test;
 run;
 
 
-* PASO 0. ASIGNAR FOLD A CADA OBSERVACIÓN DE TRAIN;
+* PASO 0. ASIGNAR FOLD A CADA OBSERVACIÃ“N DE TRAIN;
 proc surveyselect data=train
     out=train_cv
     method=srs
@@ -70,7 +70,7 @@ run;
             score data=cv_val out=score_val_y_&f;
         run;
 
-        * Calcular Youden en cv_train y extraer cutoff óptimo;
+        * Calcular Youden en cv_train y extraer cutoff Ã³ptimo;
         data roc_fold_&f;
             set roc_fold_&f;
             youden = _sensit_ + (1 - _1mspec_) - 1;
@@ -104,7 +104,7 @@ run;
               and b.Salud_bin = 0;
         quit;
 
-        * Métricas;
+        * MÃ©tricas;
         proc sql noprint;
             select sum(case when Salud_bin=pred then 1 else 0 end)/count(*)
             into :acc_f trimmed
@@ -174,7 +174,7 @@ data pred_test_final;
 run;
 
 proc sql;
-    title "Evaluación final en TEST Modelo reducido con umbral Youden";
+    title "EvaluaciÃ³n final en TEST Modelo reducido con umbral Youden";
     select
         sum(case when Salud_bin=pred  then 1 else 0 end)/count(*) as Accuracy,
         sum(case when Salud_bin=1 and pred=1 then 1 else 0 end) /
