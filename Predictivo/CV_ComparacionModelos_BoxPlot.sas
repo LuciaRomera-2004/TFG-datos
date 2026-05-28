@@ -15,7 +15,7 @@ data datos_tfg;
 
 run;
 
-* PARTICI”N TRAIN-TEST;
+* PARTICI√ìN TRAIN-TEST;
 proc surveyselect data=datos_tfg
     out=particion
     samprate=0.8
@@ -61,7 +61,7 @@ data comparacion_final;
 run;
 
 
-* GANADOR REGRESI”N LOGÕSTICA;
+* GANADOR REGRESI√ìN LOG√çSTICA;
 %macro cv_logistica;
 
     %do f = 1 %to 5;
@@ -137,7 +137,7 @@ run;
 %cv_logistica;
 
 
-* GANADOR ¡RBOL CLASIFICACI”N;
+* GANADOR √ÅRBOL CLASIFICACI√ìN;
 %macro cv_arbol;
 
     %do f = 1 %to 5;
@@ -323,7 +323,7 @@ proc means data=comparacion_final
 
     var Sensibilidad;
 
-    title "ComparaciÛn final de sensibilidad";
+    title "Comparaci√≥n final de sensibilidad";
 
 run;
 
@@ -349,6 +349,6 @@ proc sgplot data=comparacion_final;
           max=1
           values=(0.5 to 1 by 0.05);
 
-    title "ComparaciÛn final de sensibilidad mediante validaciÛn cruzada";
+    title "Comparaci√≥n final de sensibilidad mediante validaci√≥n cruzada";
 
 run;
