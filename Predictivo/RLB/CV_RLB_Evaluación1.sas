@@ -18,7 +18,7 @@ DATA datos_tfg;
 RUN;
 
 
-* 2. PARTICI覰 TRAIN;
+* 2. PARTICI脫N TRAIN;
 proc surveyselect data=datos_tfg
     out=particion
     samprate=0.8
@@ -33,8 +33,8 @@ data train test;
     else output test;
 run;
 
-* VALIDACI覰 CRUZADA (k=5);
-   * PASO 0. ASIGNAR FOLD A CADA OBSERVACI覰 DE TRAIN;
+* VALIDACI脫N CRUZADA (k=5);
+   * PASO 0. ASIGNAR FOLD A CADA OBSERVACI脫N DE TRAIN;
 proc surveyselect data=train
     out=train_cv
     method=srs
@@ -49,7 +49,7 @@ data train_cv;
 run;
 
 
-* PASO 1. TABLA VAC蛵A PARA GUARDAR RESULTADOS;
+* PASO 1. TABLA VAC脥聧A PARA GUARDAR RESULTADOS;
 data resultados_cv;
     length modelo $40;
     length fold AUC Accuracy Sensibilidad Especificidad 8;
@@ -57,12 +57,12 @@ data resultados_cv;
 run;
 
 
-* PASO 2. MACRO DE VALIDACI覰 CRUZADA;
+* PASO 2. MACRO DE VALIDACI脫N CRUZADA;
 %macro cv_logistica(modelo=, vars=, selection=none, slentry=, slstay=);
 
     %do f = 1 %to 5;
 
-        * Partici髇  del fold;
+        * Partici贸n  del fold;
         data cv_train cv_val;
             set train_cv;
             if fold = &f then output cv_val;
@@ -105,7 +105,7 @@ run;
             pred = (phat >= 0.5);
         run;
 
-        * AUC en validaci髇 (Wilcoxon);
+        * AUC en validaci贸n (Wilcoxon);
         proc sql noprint;
             select mean(case
                         when a.phat > b.phat then 1
@@ -116,7 +116,7 @@ run;
             where a.Salud_bin = 1 and b.Salud_bin = 0;
         quit;
 
-        * M閠ricas de clasificaci髇;
+        * M茅tricas de clasificaci贸n;
         proc sql noprint;
             select sum(case when Salud_bin=pred then 1 else 0 end) / count(*)
             into :acc_f trimmed
@@ -200,7 +200,7 @@ run;
               slstay=0.01);
 
 
-* PASO 4. TABLA RESUMEN (media y desv.t韕ica por modelo);
+* PASO 4. TABLA RESUMEN (media y desv.t铆pica por modelo);
 proc means data=resultados_cv mean std min max;
     class modelo;
     var AUC Accuracy Sensibilidad Especificidad;
@@ -215,7 +215,7 @@ proc sgplot data=resultados_cv;
                lineattrs=(thickness=1.5);
     xaxis label="Modelo" fitpolicy=rotate;
     yaxis label="AUC" min=0.5 max=1;
-    title "Validaci髇 Cruzada k=5 AUC";
+    title "Validaci贸n Cruzada k=5 AUC";
 run;
 
 * Accuracy;
@@ -224,7 +224,7 @@ proc sgplot data=resultados_cv;
                     lineattrs=(thickness=1.5);
     xaxis label="Modelo" fitpolicy=rotate;
     yaxis label="Accuracy" min=0.5 max=1;
-    title "Validaci髇 Cruzada k=5 Accuracy";
+    title "Validaci贸n Cruzada k=5 Accuracy";
 run;
 
 * Sensibilidad;
@@ -233,7 +233,7 @@ proc sgplot data=resultados_cv;
                         lineattrs=(thickness=1.5);
     xaxis label="Modelo" fitpolicy=rotate;
     yaxis label="Sensibilidad" min=0 max=1;
-    title "Validaci髇 Cruzada k=5 Sensibilidad";
+    title "Validaci贸n Cruzada k=5 Sensibilidad";
 run;
 
 * Especificidad;
@@ -242,5 +242,5 @@ proc sgplot data=resultados_cv;
                          lineattrs=(thickness=1.5);
     xaxis label="Modelo" fitpolicy=rotate;
     yaxis label="Especificidad" min=0 max=1;
-    title "Validaci髇 Cruzada k=5 Especificidad";
+    title "Validaci贸n Cruzada k=5 Especificidad";
 run;
