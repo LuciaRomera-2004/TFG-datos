@@ -19,7 +19,7 @@ DATA datos_tfg;
 RUN;
 
 
-* 2. PARTICIÓN TRAIN-TEST;
+* 2. PARTICIÃ“N TRAIN-TEST;
 proc surveyselect data=datos_tfg
     out=particion
     samprate=0.8
@@ -58,12 +58,12 @@ data resultados_cv;
 run;
 
 
-* PASO 2. MACRO VALIDACIÓN CRUZADA;
+* PASO 2. MACRO VALIDACIÃ“N CRUZADA;
 %macro cv_logistica(modelo=, vars=);
 
     %do f = 1 %to 5;
 
-        * Separar fold train-validación;
+        * Separar fold train-validaciÃ³n;
         data cv_train cv_val;
             set train_cv;
 
@@ -79,7 +79,7 @@ run;
         run;
 
 
-        * Predicción cutoff 0.5;
+        * PredicciÃ³n cutoff 0.5;
         data score_val_&f;
             set score_val_&f;
 
@@ -125,7 +125,7 @@ run;
         quit;
 
 
-        * Guardar métricas;
+        * Guardar mÃ©tricas;
         data fold_res;
 
             length modelo $40;
@@ -166,7 +166,7 @@ proc means data=resultados_cv mean std min max;
         Sensibilidad
         Especificidad;
 
-    title "CV k=5 — Modelo completo";
+    title "CV k=5 â€” Modelo completo";
 
 run;
 
@@ -182,7 +182,7 @@ proc sgplot data=resultados_cv;
     xaxis label="Modelo";
     yaxis label="AUC" min=0.5 max=1;
 
-    title "CV k=5 — AUC";
+    title "CV k=5 â€” AUC";
 
 run;
 
@@ -197,7 +197,7 @@ proc sgplot data=resultados_cv;
     xaxis label="Modelo";
     yaxis label="Accuracy" min=0.5 max=1;
 
-    title "CV k=5 — Accuracy";
+    title "CV k=5 â€” Accuracy";
 
 run;
 
@@ -212,7 +212,7 @@ proc sgplot data=resultados_cv;
     xaxis label="Modelo";
     yaxis label="Sensibilidad" min=0 max=1;
 
-    title "CV k=5 — Sensibilidad";
+    title "CV k=5 â€” Sensibilidad";
 
 run;
 
@@ -227,7 +227,7 @@ proc sgplot data=resultados_cv;
     xaxis label="Modelo";
     yaxis label="Especificidad" min=0 max=1;
 
-    title "CV k=5 — Especificidad";
+    title "CV k=5 â€” Especificidad";
 
 run;
 
@@ -253,7 +253,7 @@ DATA datos_tfg;
 RUN;
 
 
-* 2. PARTICIÓN TRAIN-TEST;
+* 2. PARTICIÃ“N TRAIN-TEST;
 proc surveyselect data=datos_tfg
     out=particion
     samprate=0.8
@@ -292,12 +292,12 @@ data resultados_cv;
 run;
 
 
-* PASO 2. MACRO VALIDACIÓN CRUZADA;
+* PASO 2. MACRO VALIDACIÃ“N CRUZADA;
 %macro cv_logistica(modelo=, vars=);
 
     %do f = 1 %to 5;
 
-        * Separar fold train-validación;
+        * Separar fold train-validaciÃ³n;
         data cv_train cv_val;
             set train_cv;
 
@@ -313,7 +313,7 @@ run;
         run;
 
 
-        * Predicción cutoff 0.5;
+        * PredicciÃ³n cutoff 0.5;
         data score_val_&f;
             set score_val_&f;
 
@@ -359,7 +359,7 @@ run;
         quit;
 
 
-        * Guardar métricas;
+        * Guardar mÃ©tricas;
         data fold_res;
 
             length modelo $40;
@@ -401,7 +401,7 @@ proc means data=resultados_cv mean std min max;
         Sensibilidad
         Especificidad;
 
-    title "CV k=5 — Modelo reducido";
+    title "CV k=5 â€” Modelo reducido";
 
 run;
 
@@ -417,7 +417,7 @@ proc sgplot data=resultados_cv;
     xaxis label="Modelo";
     yaxis label="AUC" min=0.5 max=1;
 
-    title "CV k=5 — AUC";
+    title "CV k=5 â€” AUC";
 
 run;
 
@@ -432,7 +432,7 @@ proc sgplot data=resultados_cv;
     xaxis label="Modelo";
     yaxis label="Accuracy" min=0.5 max=1;
 
-    title "CV k=5 — Accuracy";
+    title "CV k=5 â€” Accuracy";
 
 run;
 
@@ -447,7 +447,7 @@ proc sgplot data=resultados_cv;
     xaxis label="Modelo";
     yaxis label="Sensibilidad" min=0 max=1;
 
-    title "CV k=5 — Sensibilidad";
+    title "CV k=5 â€” Sensibilidad";
 
 run;
 
@@ -462,7 +462,7 @@ proc sgplot data=resultados_cv;
     xaxis label="Modelo";
     yaxis label="Especificidad" min=0 max=1;
 
-    title "CV k=5 — Especificidad";
+    title "CV k=5 â€” Especificidad";
 
 run;
 
@@ -489,7 +489,7 @@ DATA datos_tfg;
 RUN;
 
 
-* 2. PARTICIÓN TRAIN-TEST;
+* 2. PARTICIÃ“N TRAIN-TEST;
 proc surveyselect data=datos_tfg
     out=particion
     samprate=0.8
@@ -527,12 +527,12 @@ data resultados_cv;
 run;
 
 
-* PASO 2. MACRO VALIDACIÓN CRUZADA;
+* PASO 2. MACRO VALIDACIÃ“N CRUZADA;
 %macro cv_logistica(modelo=, vars=);
 
     %do f = 1 %to 5;
 
-        * Separar fold train-validación;
+        * Separar fold train-validaciÃ³n;
         data cv_train cv_val;
             set train_cv;
 
@@ -548,7 +548,7 @@ run;
         run;
 
 
-        * Predicción cutoff 0.5;
+        * PredicciÃ³n cutoff 0.5;
         data score_val_&f;
             set score_val_&f;
 
@@ -594,7 +594,7 @@ run;
         quit;
 
 
-        * Guardar métricas;
+        * Guardar mÃ©tricas;
         data fold_res;
 
             length modelo $40;
@@ -637,7 +637,7 @@ proc means data=resultados_cv mean std min max;
         Sensibilidad
         Especificidad;
 
-    title "CV k=5 — Modelo reducido";
+    title "CV k=5 â€” Modelo reducido";
 
 run;
 
@@ -653,7 +653,7 @@ proc sgplot data=resultados_cv;
     xaxis label="Modelo";
     yaxis label="AUC" min=0.5 max=1;
 
-    title "CV k=5 — AUC";
+    title "CV k=5 â€” AUC";
 
 run;
 
@@ -668,7 +668,7 @@ proc sgplot data=resultados_cv;
     xaxis label="Modelo";
     yaxis label="Accuracy" min=0.5 max=1;
 
-    title "CV k=5 — Accuracy";
+    title "CV k=5 â€” Accuracy";
 
 run;
 
@@ -683,7 +683,7 @@ proc sgplot data=resultados_cv;
     xaxis label="Modelo";
     yaxis label="Sensibilidad" min=0 max=1;
 
-    title "CV k=5 — Sensibilidad";
+    title "CV k=5 â€” Sensibilidad";
 
 run;
 
@@ -698,6 +698,6 @@ proc sgplot data=resultados_cv;
     xaxis label="Modelo";
     yaxis label="Especificidad" min=0 max=1;
 
-    title "CV k=5 — Especificidad";
+    title "CV k=5 â€” Especificidad";
 
 run;
