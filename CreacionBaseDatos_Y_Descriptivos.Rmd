@@ -1,0 +1,1335 @@
+---
+title: "Descriptivos"
+author: "Lucia Romera"
+date: "2026-03-09"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#install.packages("dplyr")
+library(dplyr)
+```
+
+**LECTURA DE DATOS**
+Cada archivo contiene df_micro (los datos) y df_meta (descripción).
+Nos quedamos solo con df_micro y lo renombramos para no confundir adulto/hogar
+
+```{r}
+load("D:/UCM/Curso 4/2 cuatri/TFG/encuesta salud ministerio/ESdEadulto_2023.RData")
+adulto <- df_micro # renombrar la base de datos 
+rm(df_micro,df_meta) # borrar el original para evitar confusión
+```
+
+```{r}
+load("D:/UCM/Curso 4/2 cuatri/TFG/encuesta salud ministerio/ESdEhogar_2023.RData")
+hogar <- df_micro
+rm(df_micro,df_meta)
+```
+
+**SELECCIÓN VARIABLES**
+
+##### EMPEZAMOS SELECCIONANDO LAS VARIABLES DE LOS FICHEROS Y CODIFICANDO LOS NA
+
+##### FICHERO ADULTO (variables sociodemográficas y sanitarias)
+
+```{r Variables seleccionadas del fichero adulto}
+vars_concret <- c(
+  "CCAA","IDENTHOGAR","SEXOa","EDADa",
+  "A1a","A3","A4","A5","NIVEST",
+  "M1","M2","M3_1","M3_2","M3_3","M3_4",
+  "O1","O2",
+  "Q1","Q2", "Q6",
+  "IMC","CMD2","CMD3","SEVERIDAD_DEPRESIVA",
+  "B1","B2","B5","B6","B8","B11","B12",
+  "D1_1","D1_2","D1_3","D2",
+  "E1", "E2",
+  "F2","F4","F6","F8",
+  "G7","G8",
+  "I2","I4","I9_1","I9_2","I9_3","I10","I11_1", "I11_2", "I11_3", "I11_4",
+  "I12_1", "I12_2", "I12_3", "I12_4", "I13_1","I13_2","I13_3","I13_4","I13_5","I14b",
+  "T1","T3",
+  "J1", "J2","J3","J4","J7","J8","J9","J10", "J15_1","J15_2","J15_3","J15_4","J15_5","J15_6","J15_7",
+  "H3","H4"
+)
+
+vars_C <- grep("^C[0-9]", names(adulto), value = TRUE)
+vars_P <- grep("^P[0-9]", names(adulto), value = TRUE)
+vars_ADL <- grep("^G1_", names(adulto), value = TRUE)
+vars_IADL <- grep("^G4_", names(adulto), value = TRUE)
+vars_K <- grep("^K3_", names(adulto), value = TRUE)
+
+adulto_seleccion <- adulto[, unique(c(vars_concret, vars_C, vars_ADL, vars_IADL, vars_P, vars_K))]
+
+```
+
+
+```{r Codificacion de NA para adulto}
+vars_g1 <- c("A3","NIVEST","B8","I2","I4","I14b","J2","Q2" )
+for (v in vars_g1) {
+  adulto_seleccion[[v]][adulto_seleccion[[v]] == 99] <- NA
+}
+
+vars_g2 <- c("EDADa","E2","J3","J8","J10","CMD2","CMD3")
+for (v in vars_g2) {
+  adulto_seleccion[[v]][adulto_seleccion[[v]] == 999] <- NA
+}
+
+vars_g3 <- c("F4","F6","F8",vars_IADL,"O1")
+for (v in vars_g3) {
+  adulto_seleccion[[v]][adulto_seleccion[[v]] %in% c(5,9)] <- NA
+}
+
+vars_g4 <- c("M1","M2","M3_1","M3_2","M3_3","M3_4" )
+for (v in vars_g4) {
+  adulto_seleccion[[v]][adulto_seleccion[[v]] %in% c(3,9)] <- NA
+}
+
+
+vars_excluir <- c(vars_g1, vars_g2, vars_g3, vars_g4, "CCAA", "IDENTHOGAR")
+vars_generales <- setdiff(names(adulto_seleccion), vars_excluir)
+
+codigos_na_generales <- c(9,99,999)
+for (v in vars_generales) {
+  adulto_seleccion[[v]][adulto_seleccion[[v]] %in% codigos_na_generales] <- NA
+}
+```
+
+##### FICHERO HOGAR 
+
+```{r Variables seleccionadas del fichero hogar}
+vars_C22 <- grep("^C22_", names(hogar), value = TRUE)
+hogar_seleccion <- subset(hogar, select = c("IDENTHOGAR","ESTRATO","NADULTOS","NMENORES","A12","CLASE_PR","INGRESOS",vars_C22))
+```
+
+```{r Codificación de NA para hogar}
+vars_g1 <- c("NADULTOS","NMENORES","INGRESOS" ) 
+for (v in vars_g1) {
+  hogar_seleccion[[v]][hogar_seleccion[[v]] == 99] <- NA 
+}
+
+vars_g2 <- c("CLASE_PR")
+for (v in vars_g2) { 
+  hogar_seleccion[[v]][hogar_seleccion[[v]] %in% c(8,9)] <- NA 
+}
+
+for (v in vars_C22) {
+  hogar_seleccion[[v]][hogar_seleccion[[v]] == 9] <- NA
+}
+```
+
+**OBSERVAMOS LOS DOS FICHEROS**
+
+```{r}
+n_total <- nrow(adulto_seleccion)
+n_unicos <- length(unique(adulto_seleccion$IDENTHOGAR))
+cat("Número total de observaciones:", n_total, "\n")
+cat("Número de adultos únicos:", n_unicos, "\n")
+```
+
+```{r}
+duplicados <- adulto_seleccion$IDENTHOGAR[duplicated(adulto_seleccion$IDENTHOGAR)]
+length(duplicados)  # Número de duplicados
+```
+```{r}
+n_total <- nrow(hogar_seleccion)
+n_unicos <- length(unique(hogar_seleccion$IDENTHOGAR))
+cat("Número total de observaciones:", n_total, "\n")
+cat("Número de hogares únicos:", n_unicos, "\n")
+```
+
+```{r}
+duplicados <- hogar_seleccion$IDENTHOGAR[duplicated(hogar_seleccion$IDENTHOGAR)]
+length(duplicados)  # Número de duplicados
+```
+**CREACIÓN DE VARIABLES DERIVADAS**
+
+##### VARIABLES BINARIAS (SÍ/NO)
+
+```{r Funcion para la creacion de variables}
+# Función genérica para crear variable binaria
+crear_prob <- function(df, cols) {
+  apply(df[, cols], 1, function(x) {
+    if(any(x == 1, na.rm = TRUE)) {
+      1
+    } else if(any(is.na(x))) {
+      NA
+    } else {
+      0
+    }
+  })
+}
+```
+
+
+-   cols_a: alguna vez ha tenido problemas...
+-   cols_b: has tenido problemas de ... en los últimos 12 meses
+-   cols_c: has tenido problemas de ... diagnosticados
+
+```{r Variables a utilizar para variables referentes a salud}
+problemas <- list(
+  cardiovascular      = list(cols_a = paste0("C5a_", 1:4), cols_b = paste0("C5b_", 1:4), cols_c = paste0("C5c_", 1:4)),
+  venoso              = list(cols_a = "C5a_5", cols_b = "C5b_5", cols_c = "C5c_5"),
+  osteoarticular      = list(cols_a = paste0("C5a_", 6:8), cols_b = paste0("C5b_", 6:8), cols_c = paste0("C5c_", 6:8)),
+  respiratorio        = list(cols_a = paste0("C5a_", 9:11), cols_b = paste0("C5b_", 9:11), cols_c = paste0("C5c_", 9:11)),
+  diabetes            = list(cols_a = "C5a_12", cols_b = "C5b_12", cols_c = "C5c_12"),
+  digestivo           = list(cols_a = c("C5a_13","C5a_14","C5a_15","C5a_18","C5a_19","C5a_26"),
+                             cols_b = c("C5b_13","C5b_14","C5b_15","C5b_18","C5b_19","C5b_26"),
+                             cols_c = c("C5c_13","C5c_14","C5c_15","C5c_18","C5c_19","C5c_26")),
+  mental              = list(cols_a = paste0("C5a_", 21:23), cols_b = paste0("C5b_", 21:23), cols_c = paste0("C5c_", 21:23)),
+  demencia            = list(cols_a = "C5a_20", cols_b = "C5b_20", cols_c = "C5c_20"),
+  ictus               = list(cols_a = "C5a_24", cols_b = "C5b_24", cols_c = "C5c_24"),
+  migraña             = list(cols_a = "C5a_25", cols_b = "C5b_25", cols_c = "C5c_25"),
+  cutaneo             = list(cols_a = c("C5a_16","C5a_17"), cols_b = c("C5b_16","C5b_17"), cols_c = c("C5c_16","C5c_17")),
+  osteoporosis        = list(cols_a = "C5a_28", cols_b = "C5b_28", cols_c = "C5c_28"),
+  hormonal            = list(cols_a = paste0("C5a_", 29:32), cols_b = paste0("C5b_", 29:32), cols_c = paste0("C5c_", 29:32)),
+  lesAccid            = list(cols_a = "C5a_33", cols_b = "C5b_33", cols_c = "C5c_33"),
+  cancer              = list(cols_a = "C5a_27", cols_b = "C5b_27", cols_c = "C5c_27"),
+  bucodental          = list(cols_a = "C4", cols_b = "C4", cols_c = "C4")
+)
+```
+
+
+```{r Creacion variables referentes a problemas de salud}
+# Bucle para crear todas las variables de problemas
+for (nombre in names(problemas)) {
+  adulto_seleccion[[paste0("p_", nombre)]] <- crear_prob(adulto_seleccion, problemas[[nombre]]$cols_a)
+  adulto_seleccion[[paste0("p_", nombre, "12")]] <- crear_prob(adulto_seleccion, problemas[[nombre]]$cols_b)
+  adulto_seleccion[[paste0("p_", nombre, "Diag")]] <- crear_prob(adulto_seleccion, problemas[[nombre]]$cols_c)
+}
+```
+
+
+```{r Comprobacion de codigo con obs 1 y 9}
+# Seleccionamos solo las columnas C5a_1:C5a_4, C5b_1:C5b_4, C5c_1:C5c_4
+cols_cardiovascular <- c(paste0("C5a_", 1:4), paste0("C5b_", 1:4), 
+                         paste0("C5c_", 1:4))
+
+# Mostramos filas 1 y 9
+adulto_seleccion[c(1, 9), cols_cardiovascular]
+```
+
+Medicamentos consumidos y recetados:
+
+medic_cons o medic_rec: Derivada de variables 'Consumo de Medicamentos' (K3_)
+
+```{r Variables a utilizar para variables referentes a medicamentos consumidos y recetados}
+medic_cons <- list(
+  respiratorios = c("K3_1a","K3_3a","K3_8a","K3_9a"),
+  dolor_reuma = c("K3_2a","K3_7a","K3_10a"),
+  cardiovascular = c("K3_11a","K3_12a","K3_18a","K3_19a","K3_20a"),
+  suplem_homeopaticos = c("K3_4a","K3_21a","K3_22a","K3_23a"),
+  hormonales_reprod = c("K3_15a","K3_16a"),
+  digestivos = c("K3_13a","K3_5a"),
+  psiquiatricos = c("K3_14a","K3_7a"),
+  antibioticos = c("K3_6a"),
+  metabolicos = c("K3_17a")
+)
+
+medic_rec <- list(
+  respiratorios = c("K3_1b","K3_3b","K3_8b","K3_9b"),
+  dolor_reuma = c("K3_2b","K3_7b","K3_10b"),
+  cardiovascular = c("K3_11b","K3_12b","K3_18b","K3_19b","K3_20b"),
+  suplementos_homeopaticos = c("K3_4b","K3_21b","K3_22b","K3_23b"),
+  hormonales_reproductivos = c("K3_15b","K3_16b"),
+  digestivos = c("K3_13b","K3_5b"),
+  psiquiatricos = c("K3_14b","K3_7b"),
+  antibioticos = c("K3_6b"),
+  metabolicos = c("K3_17b")
+)
+```
+
+```{r Creacion de variables referentes a medicamentos consumidos y recetados}
+for (grupo in names(medic_cons)) {
+  varname <- paste0(grupo, "_cons")
+  adulto_seleccion[[varname]] <- crear_prob(adulto_seleccion, medic_cons[[grupo]])
+}
+
+for (grupo in names(medic_rec)) {
+  varname <- paste0(grupo, "_rec")
+  adulto_seleccion[[varname]] <- crear_prob(adulto_seleccion, medic_rec[[grupo]])
+}
+```
+
+Necesidad de atención médica no cubierta debida a:
+-   lista de espera (M1)
+-   transporte (M2)
+-   economía (M3_i i=1,2,3,4) --> Agrupar (1=sí 2 y 3=no)
+
+La categoría "no lo he necesitado" se recodificó como ausencia de necesidad no cubierta, dado que no implica falta de atención sino ausencia de necesidad asistencial.
+
+```{r Recodificacion de M3}
+vars_M3 <- grep("^M3_", names(adulto_seleccion), value = TRUE)
+
+# Recodificar M3: 1=1, 2=0, 3=0, NA=NA
+adulto_seleccion[, vars_M3] <-
+  lapply(adulto_seleccion[, vars_M3, drop = FALSE], function(x) {
+    ifelse(is.na(x), NA,
+           ifelse(x == 1, 1, 0))
+  })
+```
+
+Creación de otras variables binarias:
+-   Necesidad de atención médica no cubierta debida a problemas económicos (M3, codificación anterior)
+-   Consultas médicas y otros servicios ambulatorios (I...)
+-   Hospitalizaciones, urgencias y seguro sanitario (J...)
+
+```{r Creacion otras variables binarias}
+otras_binarias <- list(
+  M3 = grep("^M3_", names(adulto_seleccion), value = TRUE),
+  visita_profesional_12m = c("I9_1","I9_2","I9_3"),
+  pruebas_diagnosticas_12m = c("I10","I11_1","I11_2","I11_3","I11_4"),
+  servicios_alternativos_12m = c("I12_1","I12_2","I12_3","I12_4"),
+  asistencia_domicilio_12m = c("I13_1","I13_2","I13_3","I13_4","I13_5"),
+  hospital_ingr = c("J1", "J4", "J7"),
+  urgencias_util = c("J9")
+)
+
+for (nombre in names(otras_binarias)) {
+  adulto_seleccion[[nombre]] <- 
+    crear_prob(adulto_seleccion, otras_binarias[[nombre]])
+}
+```
+
+Creación de variables binarias a partir de variables numéricas para:
+-   Consultas médicas y otros servicios ambulatorios (I...)
+
+```{r Creacion de binarias para numericas}
+crear_prob_visitas <- function(df, cols) {
+  apply(df[, cols], 1, function(x) {
+    if(any(x > 0, na.rm = TRUE)) {   
+      1
+    } else if(any(is.na(x))) {       
+      NA
+    } else {                          
+      0
+    }
+  })
+}
+
+# visitas médicas últimas 4 semanas y visitas dentista últimos 3 meses
+adulto_seleccion$visita_medico_4s <- crear_prob_visitas(adulto_seleccion, c("I2","I4"))
+adulto_seleccion$visita_dentista_3m <- crear_prob_visitas(adulto_seleccion, c("I14b"))
+```
+
+Frecuencia de esas visitas al medico en las últimas 4 semanas:
+
+```{r}
+adulto_seleccion$veces_medico_4s <- rowSums(adulto_seleccion[, c("I2","I4")], na.rm = TRUE)
+```
+
+Creación de una variable binaria con otra codificación de variable (excel), por lo que cambia la función:
+-   Limitaciones para la realización de actividades cotidianas (diarias y del hogar):
+
+```{r Creacion de la funcion}
+crear_limitacion <- function(df, cols) {
+  apply(df[, cols], 1, function(x) {
+    # Si hay alguna dificultad (2,3,4)
+    if(any(x %in% c(2,3,4), na.rm = TRUE)) {
+      1
+    # Si no hay dificultad pero hay algún NA
+    } else if(any(is.na(x))) {
+      NA
+    # Si todo es 1 (sin dificultad)
+    } else {
+      0
+    }
+  })
+}
+```
+
+```{r Creacion de las variables}
+adulto_seleccion$dif_act_basicas <- crear_limitacion(adulto_seleccion, vars_ADL)
+adulto_seleccion$dif_act_hogar <- crear_limitacion(adulto_seleccion, vars_IADL)
+```
+
+Codificación de la **variable dependiente**:
+
+Predigo estado de salud percibido por un adulto en el último año: Crearla como binaria y predecir MAL estado de salud (categoría minoritaria)
+
+Código Descripción: 1 Muy bueno / 2 Bueno / 3 Regular / 4 Malo / 5 Muy malo
+
+```{r}
+adulto_seleccion$C1[adulto_seleccion$C1 %in% c(1,2)] <- "Bueno"
+adulto_seleccion$C1[adulto_seleccion$C1 %in% c(3,4,5)] <- "Malo"
+```
+
+```{r}
+table(adulto_seleccion$C1, useNA = "ifany")
+prop.table(table(adulto_seleccion$C1)) * 100
+```
+
+##### VARIABLES MULTICATEGORÍAS
+
+1.  Creación de la variable referente a alimentación (considero que una alimentación buena es x, quien supere el 70% buena, quien no supere el 30% malo, el resto regular):
+
+```{r}
+# vector de columnas que vamos a usar
+cols_buena <- c("P1_1","P1_2","P1_3","P1_4","P1_5","P1_6","P1_7",
+                "P1_8","P1_9","P1_10","P1_11","P1_12","P1_13","P1_14")
+
+# valores considerados "buena alimentación" según cada variable
+valores_buena <- list(
+  P1_1 = 1,
+  P1_2 = c(2,3),
+  P1_3 = c(2,3),
+  P1_4 = c(2,3),
+  P1_5 = 1,
+  P1_6 = 1,
+  P1_7 = 1,
+  P1_8 = c(2,3),
+  P1_9 = c(5,6),
+  P1_10 = c(1,2),
+  P1_11 = c(5,6),
+  P1_12 = c(5,6),
+  P1_13 = c(5,6),
+  P1_14 = c(5,6)
+)
+
+# crear tabla binaria de 1,0,NA
+tabla_buena <- sapply(cols_buena, function(col) {
+  x <- adulto_seleccion[[col]]
+  ifelse(is.na(x), NA,
+         ifelse(x %in% valores_buena[[col]], 1, 0))
+})
+
+# convertir a data.frame
+tabla_buena <- as.data.frame(tabla_buena)
+
+# calcular porcentaje de 1 por fila
+tabla_buena$prop <- rowMeans(tabla_buena, na.rm = TRUE)
+
+# Crear la variable alimentacion según prop
+adulto_seleccion$alimentacion <- ifelse(
+  is.na(tabla_buena$prop), NA,             # si prop es NA → NA
+  ifelse(tabla_buena$prop >= 0.7, "Buena", # ≥ 0.7 → buena
+         ifelse(tabla_buena$prop <= 0.3, "Mala", "Regular")) # ≤0.3 → mala, resto regular
+)
+```
+
+Visualización de la variable:
+
+```{r}
+# Contar cuántas observaciones hay de cada categoría
+tabla_alim <- table(adulto_seleccion$alimentacion, useNA = "ifany")
+
+# Convertir a porcentaje
+porcentaje_alim <- round(100 * tabla_alim / sum(tabla_alim, na.rm = TRUE), 1)
+
+# Mostrar resultados
+tabla_alim
+porcentaje_alim
+```
+2.  Creación de la variable tabaco
+
+¿Hay algún Q1=1 (fumador actual) que Q2=0?. No debería (No sabemos en que pregunta se ha confundido: imputar como NA). Lo compruebo:
+
+```{r}
+# Crear condición
+cond <- adulto_seleccion$Q1 == 1 & is.na(adulto_seleccion$Q2)
+sum(cond==TRUE,na.rm=TRUE) #62
+
+# Poner NA en esas observaciones
+adulto_seleccion$Q1[cond] <- NA
+adulto_seleccion$Q2[cond] <- NA
+```
+
+Visto esto, pasamos a crear la variable tabaco (exfumador, fumador ocasional, fumador...)
+
+```{r Crear 6 categorias}
+adulto_seleccion <- adulto_seleccion %>% 
+  # Paso 1: reemplazar códigos “no contesta” por NA
+  mutate(
+    tabaco = case_when(
+      Q1 == 4 ~ "Nunca fumador",
+      Q1 == 3 ~ "Exfumador",
+      Q1 == 2 ~ "Fumador ocasional",
+      Q1 == 1 & Q2 >= 1 & Q2 <= 9  ~ "Diario ligero",
+      Q1 == 1 & Q2 >= 10 & Q2 <= 19 ~ "Diario moderado",
+      Q1 == 1 & Q2 >= 20             ~ "Diario intenso",
+      TRUE ~ NA_character_  # NA para el resto
+))
+#ordenar el factor
+adulto_seleccion$tabaco <- factor(adulto_seleccion$tabaco,
+  levels = c("Nunca fumador",
+             "Exfumador",
+             "Fumador ocasional",
+             "Diario ligero",
+             "Diario moderado",
+             "Diario intenso"))
+```
+
+Visualizamos la variable:
+
+```{r Ver la distribucion}
+table(adulto_seleccion$tabaco, useNA = "ifany")
+prop.table(table(adulto_seleccion$tabaco)) * 100
+```
+Crear una sola variable seguro_sanitario con tres categorías claras:
+
+Primero miramos las públicas (J15_1 y J15_2): si alguna es 1, la persona tiene público (asignamos "publico"). Luego miramos las privadas (J15_3, J15_4, J15_5, J15_7): solo se asigna "privado" si ninguna pública es 1 y alguna privada es 1. Después miramos “no tiene seguro” (J15_6): solo se asigna "no_tiene" si no tiene público ni privado. El resto de casos, por ejemplo NA en público y 1 en privado, queda como NA (no sabemos seguro sanitario)
+
+```{r}
+adulto_seleccion <- adulto_seleccion %>%
+  mutate(
+    seguro_sanitario = case_when(
+      # Si alguna de las públicas es 1 → público
+      J15_1 == 1 | J15_2 == 1 ~ "Público",
+      
+      # Privado → todas las públicas son 0 (no NA) y alguna privada es 1
+      J15_1 == 0 & J15_2 == 0 & (J15_3 == 1 | J15_4 == 1 | J15_5 == 1 | J15_7 == 1) ~ "Privado",
+      
+      # No tiene seguro → J15_6 == 1 y no tiene público ni privado
+      J15_6 == 1 & !(J15_1 == 1 | J15_2 == 1 | J15_3 == 1 | J15_4 == 1 | J15_5 == 1 | J15_7 == 1) ~ "no_tiene",
+      
+      # Resto → NA
+      TRUE ~ NA_character_
+    )
+  )
+
+# Comprobación rápida
+table(adulto_seleccion$seguro_sanitario, useNA = "ifany")
+```
+##### CAMBIO DE CODIFICACIÓN (IMPUTACIÓN DE NA DE FORMA DIRECTA)
+
+Cambio de codificación de la variable referente a 'Cuidado a otras personas con problemas de salud'
+
+T1 (sí o no) y T3 (frecuencia): Cuando T1=2 (no), T3 debería de ser 0 (no es que no se sepa, sino que invierte 0 horas en esa actividad, probablemente no se conteste a la pregunta), vemos los pares de observaciones:
+
+```{r Pares de observaciones}
+unique(adulto_seleccion[, c("T1", "T3")])
+```
+
+Combierto en T3 los NA en 0 cuando T1 es 2:
+
+```{r}
+# Ajustar T3 según T1
+adulto_seleccion$T3[adulto_seleccion$T1 == "2"] <- "0"
+```
+
+##### PROBLEMAS ENTORNO EN FICHERO HOGAR
+
+Creación de una variable numérica que cuenta el número de problemas en el barrio/entorno del hogar (el número mínimo es 0 y el máximo es 9):
+
+```{r}
+for (v in vars_C22) {
+  hogar_seleccion[[v]][hogar_seleccion[[v]] == 3] <- 0 #no hay problema
+  hogar_seleccion[[v]][hogar_seleccion[[v]] == 2] <- 0.5 #hay algo de problema
+  hogar_seleccion[[v]][hogar_seleccion[[v]] == 1] <- 1 #hay problema
+}
+hogar_seleccion$problemas_entorno <- rowSums(sapply(hogar_seleccion[, vars_C22], as.numeric),na.rm = FALSE)
+```
+
+
+**ELIMINACIÓN DE VARIABLE VIEJAS USADAS**
+
+Ahora elimino todas las variables usadas para hacer las derivadas:
+```{r Eliminacion originales tras hacer derivadas}
+vars_a_eliminar <- c(
+  vars_C[vars_C != "C1"], 
+  vars_K,
+  vars_P,
+  "M3_1","M3_2","M3_3","M3_4",
+  "Q1","Q2",
+  vars_ADL, vars_IADL,
+  "I2","I4","I9_1","I9_2","I9_3","I10","I11_1", "I11_2", "I11_3", "I11_4",
+  "I12_1", "I12_2", "I12_3", "I12_4", "I13_1","I13_2","I13_3","I13_4","I13_5",
+  "J1", "J4","J7","J9","J15_1","J15_2","J15_3","J15_4","J15_5","J15_6","J15_7"
+)
+
+adulto_seleccion <- adulto_seleccion[, !(names(adulto_seleccion) %in% vars_a_eliminar)]
+```
+
+
+```{r}
+hogar_seleccion <- hogar_seleccion[, !names(hogar_seleccion) %in% vars_C22]
+```
+
+**UNIÓN DE LAS BASES DE DATOS POR IDENTHOGAR**
+
+Objetivo: Mantener una fila por individuo (adulto_seleccion) y añadirle las variables de hogar_seleccion según IDENTHOGAR.
+Cada adulto está en una fila. Cada adulto tiene sus variables individuales y variables del hogar.
+Antes de unirlas: Como en hogar el identificador se repite para cada persona de ese hogar, y estas pueden contestar cosas distintas, a la hora de unir los ficheros asociará al adulto una fila de hogar pero igual la suya es otra.
+
+  - Creamos una sola fila por hogar, que diga TRUE si todas las variables de ese hogar son idénticas en todas las filas de ese hogar, FALSE si alguna varía.
+
+```{r}
+library(dplyr)
+
+# Todas las columnas excepto IDENTHOGAR
+vars_a_comprobar <- setdiff(names(hogar_seleccion), "IDENTHOGAR")
+
+hogar_check_total <- hogar_seleccion %>%
+  group_by(IDENTHOGAR) %>%
+  summarise(all_identical = all(sapply(across(all_of(vars_a_comprobar)), 
+                                       function(x) n_distinct(x, na.rm = FALSE) == 1))) %>%
+  ungroup()
+
+# Mostrar resultados
+head(hogar_check_total)
+```
+
+Cuento cuántos hogares tienen alguna variable que no es idéntica.
+```{r}
+num_false <- sum(!hogar_check_total$all_identical)
+cat("Número de hogares con alguna variable que varía entre miembros:", num_false, "\n")
+```
+
+Al ser 0, vemos que no hay problema por lo que vamos a crear un conjunto de datos hogar_unico donde cada fila corresponda a un identificador unico (no duplicados en esa variable). Así haremos el merge y se entenderá mejor lo que se está uniendo:
+
+```{r Crear base de datos con una fila por hogar}
+hogar_unico <- unique(hogar_seleccion)
+```
+
+```{r Crear la base de datos final uniendo adulto seleccion y hogar unico}
+# Ahora hacemos el merge con adulto_seleccion (Para cada adulto, búscame su hogar usando IDENTHOGAR y añádele las variables de ese hogar)
+
+base_final <- merge(
+  adulto_seleccion,  
+  hogar_unico,       
+  by = "IDENTHOGAR", 
+  all.x = TRUE       
+)
+# merge junta dos tablas usando una columna en común.
+head(base_final)
+```
+
+
+**DEPURACIÓN DE DATOS**
+```{r Comprobamos duplicados}
+sum(duplicated(base_final))
+sum(duplicated(base_final$IDENTPERSONA)) #por persona
+```
+##### DATOS FALTANTES (NA'S)
+```{r Datos faltantes por variable}
+na_porcentaje <- sapply(base_final, function(x) {
+  sum(is.na(x)) / length(x) * 100
+})
+
+round(na_porcentaje, 2)
+```
+
+
+```{r}
+na_mas50 <- na_porcentaje[na_porcentaje > 50]
+round(na_mas50, 2)
+```
+
+Vamos a ver por tramos que pasa (% NA'S):
+```{r}
+porc_na <- colSums(is.na(base_final)) / nrow(base_final) * 100
+
+intervalos <- cut(
+  porc_na,
+  breaks = c(0,5,10,15,20,25,30,35,40,45,50),
+  right = FALSE
+)
+
+vars_por_intervalo <- split(names(porc_na), intervalos)
+
+vars_por_intervalo <- vars_por_intervalo[!(names(vars_por_intervalo) %in% c("[0,5)","[50,100)"))]
+vars_por_intervalo
+```
+
+```{r}
+porc_na <- colSums(is.na(base_final)) / nrow(base_final) * 100
+
+intervalos <- cut(
+  porc_na,
+  breaks = c(0,5,10,15,20,25,30,35,40,45,50,100),
+  right = FALSE
+)
+
+tabla_na <- table(intervalos)
+tabla_na
+```
+
+```{r}
+library(ggplot2)
+
+# 1. Tabla de faltantes
+tabla_faltantes <- data.frame(
+  Variable = names(base_final),
+  Porc_faltantes = sapply(base_final, function(x) mean(is.na(x)) * 100)
+)
+
+# 2. Filtrar (0% y >50%)
+tabla_plot <- subset(tabla_faltantes,
+                     Porc_faltantes > 0 & Porc_faltantes <= 50)
+
+# 3. Ordenar
+tabla_plot <- tabla_plot[order(tabla_plot$Porc_faltantes), ]
+
+# 4. Gráfico
+p <- ggplot(tabla_plot, aes(x = reorder(Variable, Porc_faltantes),
+                            y = Porc_faltantes)) +
+  geom_col(fill = "grey60") +  # 👈 color clarito
+  geom_text(aes(label = round(Porc_faltantes, 1)),
+            hjust = -0.2,
+            size = 5) +
+  coord_flip() +
+  labs(
+    title = "Porcentaje de valores faltantes por variable",
+    x = "",
+    y = "% de faltantes"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    axis.text.y = element_text(size = 12, face = "bold"),  # 👈 NEGRITA + MÁS GRANDE
+    axis.text.x = element_text(face = "bold", size = 20),
+    plot.margin = margin(10, 20, 10, 10)
+  )
+
+p
+```
+
+
++35% NA's las elimino directamente (que coinciden con +25%)
+El resto miro que NA son y miro si imputarlos
+  - Categóricas: con la moda
+  - Numéricas: mirar distribución (si siguen normal con la media, sino con la mediana)
+  
+```{r}
+porc_na_var <- colSums(is.na(base_final)) / nrow(base_final) * 100
+base_final <- base_final[, names(porc_na_var[porc_na_var < 35])]
+ncol(base_final)
+```
+
+Elimino p_bucodental12 y p_bucodentalDiag de base_final (incongruencia con el resto de la base de datos):
+```{r}
+base_final$p_bucodental12 <- NULL
+base_final$p_bucodentalDiag <- NULL
+```
+
+En las variables restantes, vamos a ver que patrones encontramos según los faltantes:
+```{r}
+library(naniar)
+gg_miss_upset(base_final)
+```
+
+```{r}
+base_final$M3 <- NULL
+```
+
+Además elimino la variable identificadora porque no aporta información estadística:
+```{r}
+length(unique(base_final$IDENTHOGAR))
+base_final$IDENTHOGAR <- NULL
+```
+
+Ordenamos las columnas de la base de datos según bloques: Sociodemográfico, socioeconómico y sanitario
+```{r Ordenar columnas de la base de datos}
+base_final <- base_final[, c(
+
+# Sociodemográfico
+"CCAA","SEXOa","EDADa","A1a","A4","A5","A12","NADULTOS","NMENORES",
+
+# Socioeconómico
+"NIVEST","CLASE_PR","INGRESOS","ESTRATO","problemas_entorno",
+
+# Sanitario
+"C1","IMC","SEVERIDAD_DEPRESIVA",
+"F2","F4","F6","F8",
+"D1_1","D1_2","D1_3",
+"alimentacion","tabaco","Q6","CMD2","CMD3",
+"O1","O2",
+"M1","M2",
+"visita_profesional_12m","pruebas_diagnosticas_12m",
+"servicios_alternativos_12m","urgencias_util","veces_medico_4s",
+"seguro_sanitario",
+"T1","T3","G7",
+grep("^p_", names(base_final), value = TRUE)
+
+)]
+```
+
+```{r Tipos de variables y codificacion}
+str(base_final)
+```
+
+Miro los datos faltantes ahora por filas, a ver si alguna tiene muchos y tengo que eliminarla:
+```{r Datos faltantes por observaciones}
+porc_na_fila <- rowSums(is.na(base_final)) / ncol(base_final) * 100
+sum(porc_na_fila > 25) 
+```
+```{r Codificacion de variables si o no}
+cols_a_factor <- c(grep("^p_", names(base_final), value = TRUE), "visita_profesional_12m", "pruebas_diagnosticas_12m", "servicios_alternativos_12m", "urgencias_util")
+
+for (col in cols_a_factor) {
+  base_final[[col]] <- factor(base_final[[col]],
+                              levels = c(0,1),
+                              labels = c("No","Sí"))
+}
+```
+
+```{r Codificacion de variables numericas}
+cols_a_numeric <- c("EDADa","NADULTOS","NMENORES","CMD2","CMD3")
+
+for (col in cols_a_numeric) {
+  base_final[[col]] <- as.numeric(base_final[[col]])
+}
+```
+
+```{r Codificacion de variables a factor}
+# El resto de variables leidas como caracter son factor
+cols_character <- names(base_final)[sapply(base_final, is.character)]
+base_final[cols_character] <- lapply(base_final[cols_character], factor)
+```
+
+```{r Niveles de esos factores codificados}
+base_final$CCAA <- factor(base_final$CCAA,
+                          levels = c("01","02","03","04","05","06","07","08","09",
+                                     "10","11","12","13","14","15","16","17","18","19"),
+                          labels = c("Andalucía","Aragón","Principado de Asturias",
+                                     "Islas Baleares","Canarias","Cantabria",
+                                     "Castilla y León","Castilla La Mancha",
+                                     "Cataluña","Comunidad Valenciana",
+                                     "Extremadura","Galicia",
+                                     "Comunidad de Madrid","Región de Murcia",
+                                     "Comunidad Foral de Navarra","País Vasco",
+                                     "La Rioja","Ceuta","Melilla"))
+
+base_final$SEXOa <- factor(base_final$SEXOa,
+                                     levels = c("1","2"),
+                                    labels = c("Hombre","Mujer"))
+
+base_final$A1a <- factor(base_final$A1a,
+                          levels = c("1","2"),
+                          labels = c("España","Extranjero"))
+
+base_final$A4 <- factor(base_final$A4,
+                          levels = c("1","2","3"),
+                          labels = c("Cónyuge","Pareja de hecho","Ninguno"))
+
+base_final$A5 <- factor(base_final$A5,
+                          levels = c("1","2","3","4","5"),
+                          labels = c("Soltero","Casado","Viudo",
+                                     "Separado legalmente","Divorciado"))
+# 25 años
+base_final$A12 <- factor(base_final$A12,
+                         levels = c("1","2","3","4","5","6","7","8"),
+                         labels = c("Unipersonal",
+                                    "Pareja sola",
+                                    "Pareja algún hijo < 25",
+                                    "Pareja todos hijos ≥ 25",
+                                    "Solo algún hijo < 25",
+                                    "Solo todos hijos ≥ 25",
+                                    "Mixto algún hijo < 25 y otros",
+                                    "Otro"))
+
+base_final$NIVEST <- factor(base_final$NIVEST,
+                               levels = c("01","02","03","04","05","06","07","08","09"),
+                               labels = c("No, < 10",
+                                          "No sabe leer/escribir",
+                                          "Primaria incompleta",
+                                          "Primaria completa",
+                                          "Secundaria Inicial",
+                                          "Bachillerato",
+                                          "FP grado medio",
+                                          "FP grado superior",
+                                          "Universidad"))
+
+base_final$CLASE_PR <- factor(base_final$CLASE_PR,
+                              levels = c("1","2","3","4","5","6"),
+                              labels = c("Directores/Gerentes ≥ 10 asalariados/Licenciado",
+                                         "Directores/Gerentes < 10 asalariados/Diplomatura/Apoyo técnico/Deportistas/Artistas",
+                                         "Ocupaciones intermedias/Autónomos",
+                                         "Supervisores/Técnicos cualificados",
+                                         "Trabajadores cualificados (sector primario)/Semi-cualificados",
+                                         "Trabajadores no cualificados"))
+# euros
+base_final$INGRESOS <- factor(base_final$INGRESOS,
+                              levels = c("01","02","03","04","05"),
+                              labels = c("< 1100",
+                                         "[1100,1650)",
+                                         "[1650,2300)",
+                                         "[2300,3800)",
+                                         "≥ 3800"))
+# habitantes (exceptuando si anterior)
+base_final$ESTRATO <- factor(base_final$ESTRATO,
+                             levels = c("0","1","2","3","4","5","6"),
+                             labels = c("> 500.000",
+                                        "Capital provincia",
+                                        "> 100.000",
+                                        "50.000-100.000",
+                                        "20.000-50.000",
+                                        "10.000-20.000",
+                                        "< 10.000"))
+
+
+base_final$IMC <- factor(base_final$IMC,
+                         levels = c("1","2","3","4"),
+                         labels = c("Peso insuficiente",
+                                    "Normopeso",
+                                    "Sobrepeso",
+                                    "Obesidad"))
+
+base_final$SEVERIDAD_DEPRESIVA <- factor(base_final$SEVERIDAD_DEPRESIVA,
+                                        levels = c("1","2","3","4","5"),
+                                        labels = c("Ninguna",
+                                                   "Leve",
+                                                   "Moderada",
+                                                   "Moderadamente Grave",
+                                                   "Grave"))
+
+base_final$O1 <- factor(base_final$O1,
+                        levels = c("1","2","3","4"),
+                        labels = c("Sentado",
+                                   "De pie",
+                                   "Caminando o llevando peso",
+                                   "Gran esfuerzo físico"))
+
+base_final$O2 <- factor(base_final$O2,
+                        levels = c("1","2","3","4"),
+                        labels = c("Nunca",
+                                   "Ocasionalmente",
+                                   "Varias veces al mes",
+                                   "Varias veces a la semana"))
+# horas diarias
+base_final$Q6 <- factor(base_final$Q6,
+                        levels = c("1","2","3","4"),
+                        labels = c("Nunca/Casi nunca",
+                                   "< 1",
+                                   "1-5",
+                                   "> 5"))
+# horas semanales
+base_final$T3 <- factor(base_final$T3,
+                        levels = c("0","1","2","3"),
+                        labels = c("0","< 10",
+                                   "[10,20)",
+                                   "≥ 20"))
+
+base_final$G7 <- factor(base_final$G7,
+                        levels = c("1","2","3","4","5","6"),
+                        labels = c("Ninguno",
+                                   "Muy leve",
+                                   "Leve",
+                                   "Moderado",
+                                   "Severo",
+                                   "Extremo"))
+
+cols_F <- c("F2", "F4", "F6", "F8")
+for(i in seq_along(cols_F)){
+  base_final[[cols_F[i]]] <- factor(base_final[[cols_F[i]]],
+                                         levels = c("1","2","3","4"),
+                                         labels = c("No",
+                                                    "Alguna",
+                                                    "Mucha",
+                                                    "Incapaz"))
+}
+
+cols_SiNo <- c("D1_1", "D1_2", "D1_3","T1","M1", "M2")
+for(i in seq_along(cols_SiNo)){
+  base_final[[cols_SiNo[i]]] <- factor(base_final[[cols_SiNo[i]]],
+                                         levels = c("1","2"),
+                                         labels = c("Sí","No"))
+}
+```
+
+```{r Nombres columnas}
+nuevos_nombres <- c("CCAA", "Genero", "Edad", "Pais_Nac", "Convivencia", "Est_Civil", "Tipo_Hogar", "N_Adultos", "N_Menores","Niv_Estud", "Clase_Social", "Ingresos", "Estrato", "P_Entorno", "Est_Salud", "IMC", "Sev_Depresiva", "D_Ver", "D_Oir", "D_Caminar", "D_Concentrar", "Acc_Trafico", "Acc_Casa", "Acc_Libre", "Alimentacion", "Tabaco", "Exp_Humo", "Alcohol_Entre", "Alcohol_Fin", "Act_Jornada", "Act_Libre", "Falta_ListEsp", "Falta_Transporte","Visita_Prof_12m", "Prueba_Diag_12m", "Serv_Alt_12m","Urgencias_Util", "Veces_Medico_4s", "Seg_Sanitario","Cuidado_Mayores", "Frec_Cuidado_Mayores", "Dolor","P_cardiovascular", "P_Venoso","P_Osteoarticular", "P_Respiratorio","P_Diabetes", "P_Digestivo","P_Mental", "P_Demencia","P_Ictus", "P_Migraña", "P_Cutaneo", "P_Osteoporosis", "P_LesAccid", "P_Cancer", "P_Bucodental")
+
+length(nuevos_nombres)
+colnames(base_final) <- nuevos_nombres
+```
+
+```{r}
+str(base_final)
+```
+
+```{r Elimino observaciones con más del 30porciento de NA}
+base_final <- base_final[porc_na_fila <= 30, ]
+nrow(base_final) #he eliminado 43 observaciones
+```
+
+I) Min y Max de las variables cuantitativas con sentido (error como NA)
+II) Niveles de las cualitativas (error como NA)
+III) Variables con más del 50% de NA's eliminar (NULL) + observaciones
+IV) Codificación de faltantes
+V) freq( ): todos los niveles de las cuanlitativas tienen que estar bien representados (2-5%) (Agrupar categorías con poca representatividad teniendo en cuenta el parecido semántico)
+
+```{r}
+summary(base_final)
+```
+
+```{r Para las frecuencias de categoricas}
+lapply(base_final[sapply(base_final, is.factor)], function(x) {
+  prop.table(table(x, useNA = "ifany")) * 100
+})
+```
+
+
+```{r Funcion para recodificar variables de un factor}
+recodificar_factor <- function(df, var, nuevos_valores, nuevo_nombre) {
+  df[[var]] <- factor(df[[var]])
+    if (!nuevo_nombre %in% levels(df[[var]])) {
+    df[[var]] <- factor(df[[var]], levels = c(levels(df[[var]]), nuevo_nombre))
+  }
+    df[[var]][df[[var]] %in% nuevos_valores] <- nuevo_nombre
+    df[[var]] <- droplevels(df[[var]])
+  return(df)
+}
+```
+
+Veo si todas mis variables numéricas tienen mas de 10 elementos diferentes, si no es así, las trato como factores:
+```{r}
+library(lattice)
+sapply(Filter(is.numeric,base_final),function(x) length(unique(x)))
+```
+9 o 10 no pasa nada, las dejo como numéricas.
+
+```{r Aplicacion de la función para recodificar variables}
+base_final <- recodificar_factor(base_final, "CCAA", c("Ceuta","Melilla"), "Ceuta y Melilla")
+base_final <- recodificar_factor(base_final, "Sev_Depresiva", c("Moderadamente Grave","Grave"), "Grave")
+base_final <- recodificar_factor(base_final, "Dolor", c("Muy leve", "Leve"), "Leve")
+base_final <- recodificar_factor(base_final, "Dolor", c("Severo", "Extremo"), "Grave")
+base_final <- recodificar_factor(base_final, "IMC", c("Peso insuficiente"), "Otros")
+base_final <- recodificar_factor(base_final, "Niv_Estud", c("No, < 10", "Primaria incompleta", "No sabe leer/escribir"), "Otros")
+base_final <- recodificar_factor(base_final, "Frec_Cuidado_Mayores", c("[10,20)", "≥ 20"), "≥ 10")
+```
+
+```{r Otros problemas de frecuencia}
+vars <- grep("^D_", names(base_final), value = TRUE)
+for (v in vars) {
+  base_final <- recodificar_factor(base_final, v, "Incapaz", "Mucha")
+}
+
+base_final$Seg_Sanitario <- NULL
+base_final$Acc_Trafico <- NULL
+base_final$P_Demencia <- NULL
+```
+
+```{r}
+lapply(base_final[sapply(base_final, is.factor)], function(x) {
+  prop.table(table(x, useNA = "ifany")) * 100
+})
+```
+
+
+Si la distribución de mi variable es simétrica trataré de imputar los missing con la media o el método random, en caso contrario, con la mediana o el método random:
+```{r}
+comparar_imputacion <- function(x) {
+  library(ggplot2)
+  library(cowplot)
+  library(Hmisc)
+  
+  original <- x
+  
+  mean_imp <- replace(x, is.na(x), mean(x, na.rm = TRUE))
+  median_imp <- replace(x, is.na(x), median(x, na.rm = TRUE))
+  random_imp <- impute(x, "random")
+  
+  df <- data.frame(original, mean_imp, median_imp, random_imp)
+  
+  h1 <- ggplot(df, aes(x = original)) +
+    geom_histogram(fill = "grey", color = "black") +
+    ggtitle("Original") + theme_classic()
+  
+  h2 <- ggplot(df, aes(x = mean_imp)) +
+    geom_histogram(fill = "blue", color = "black") +
+    ggtitle("Media") + theme_classic()
+  
+  h3 <- ggplot(df, aes(x = median_imp)) +
+    geom_histogram(fill = "orange", color = "black") +
+    ggtitle("Mediana") + theme_classic()
+  
+  h4 <- ggplot(df, aes(x = random_imp)) +
+    geom_histogram(fill = "green", color = "black") +
+    ggtitle("Aleatoria") + theme_classic()
+  
+  plot_grid(h1, h2, h3, h4, nrow = 2)
+}
+
+```
+
+```{r}
+comparar_imputacion(base_final$Alcohol_Entre)
+comparar_imputacion(base_final$Veces_Medico_4s)
+comparar_imputacion(base_final$Alcohol_Fin)
+comparar_imputacion(base_final$N_Menores)
+comparar_imputacion(base_final$N_Adultos)
+comparar_imputacion(base_final$P_Entorno)
+```
+
+Funcionan parecido con todas, por lo que al no ser simétricas, usaré la mediana.
+
+```{r Imputacion de los NA para variables factor}
+moda <- function(x) {
+  ux <- na.omit(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+
+for (col in names(base_final)) {
+  if (is.factor(base_final[[col]])) {
+    base_final[[col]][is.na(base_final[[col]])] <- moda(base_final[[col]])
+  }
+}
+```
+
+```{r Normalidad de variables numericas}
+num_vars <- base_final[, sapply(base_final, is.numeric)]
+
+par(mfrow = c(2,2))  # ajusta según cuántas tengas
+
+for (col in names(num_vars)) {
+  hist(num_vars[[col]],
+       main = col,
+       col = "lightgrey",
+       breaks = 20)
+}
+```
+
+```{r Imputación de los NA para variables numericas}
+for (col in names(base_final)) {
+  if (is.numeric(base_final[[col]])) {
+    base_final[[col]][is.na(base_final[[col]])] <- median(base_final[[col]], na.rm = TRUE)
+  }
+}
+```
+
+```{r Comprobacion de la imputacion de faltantes}
+any(is.na(base_final)) #FALSE: ya no hay faltantes en la base
+```
+```{r Para atipicos}
+library(tidyr)
+
+df_long <- pivot_longer(
+  base_final,
+  cols = c(
+    N_Adultos,
+    N_Menores,
+    Alcohol_Entre,
+    Alcohol_Fin,
+    P_Entorno,
+    Veces_Medico_4s,
+    Edad
+  ),
+  names_to = "name",
+  values_to = "value"
+)
+
+df_long$name <- factor(df_long$name,
+                       levels = c(
+                         "N_Adultos",
+                         "N_Menores",
+                         "Alcohol_Entre",
+                         "Alcohol_Fin",
+                         "P_Entorno",
+                         "Veces_Medico_4s",
+                         "Edad"
+                       ))
+```
+
+```{r Atipicos en numericas}
+ggplot(df_long, aes(x = "", y = value)) +
+  geom_boxplot(fill = "gray80", color = "black") +
+  facet_wrap(~ name, scales = "free_y", nrow = 2) +
+  theme_minimal() +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank()) +
+  labs(x = "", y = "")
+```
+
+```{r Porcentaje de atipicos por variable}
+resultados <- do.call(rbind, lapply(names(num_vars), function(name) {
+  
+  x <- num_vars[[name]]
+  
+  Q1 <- quantile(x, 0.25, na.rm = TRUE)
+  Q3 <- quantile(x, 0.75, na.rm = TRUE)
+  IQR_val <- IQR(x, na.rm = TRUE)
+  
+  lim_inf <- Q1 - 1.5 * IQR_val
+  lim_sup <- Q3 + 1.5 * IQR_val
+  
+  num_atipicos <- sum(x < lim_inf | x > lim_sup, na.rm = TRUE)
+  
+  data.frame(
+    Variable = name,
+    Q1 = Q1,
+    Q3 = Q3,
+    Lim_inf = lim_inf,
+    Lim_sup = lim_sup,
+    Num_atipicos = num_atipicos,
+    Porc_atipicos = num_atipicos / nrow(base_final) *100
+  )
+}))
+
+resultados
+```
+
+```{r}
+summary(num_vars)
+```
+
+```{r}
+par(mfrow = c(1,2)) 
+
+vars <- c("Alcohol_Entre", "Veces_Medico_4s")
+
+for (v in vars) {
+  
+  x <- base_final[[v]]
+  
+  Q1 <- quantile(x, 0.25, na.rm = TRUE)
+  Q3 <- quantile(x, 0.75, na.rm = TRUE)
+  IQR_val <- IQR(x, na.rm = TRUE)
+  
+  outliers <- x < (Q1 - 1.5 * IQR_val) | x > (Q3 + 1.5 * IQR_val)
+  
+  plot(x,
+       main = v,
+       ylab = "Valor",
+       xlab = "Índice",
+       pch = 16,
+       col = ifelse(outliers, "red", "green"))
+  
+  abline(h = Q1 - 1.5 * IQR_val, col = "blue", lty = 2)
+  abline(h = Q3 + 1.5 * IQR_val, col = "blue", lty = 2)
+}
+```
+
+```{r Multicolinealidad numericas}
+library(corrplot)
+num_vars <- c("Edad", "N_Adultos", "N_Menores","P_Entorno","Alcohol_Entre","Alcohol_Fin","Veces_Medico_4s")
+base_final|>
+select(num_vars)|>
+cor()|>
+corrplot(,order='AOE',  tl.col = "black")
+```
+```{r Correlacion alcoholes}
+library(polycor)
+vars_tab <- base_final[, 27:28]
+matriz <- hetcor(vars_tab)$correlations
+round(matriz, 2)
+```
+
+```{r Multicolinealidad categoricas}
+library(dplyr)
+
+cat_vars <- names(base_final)[sapply(base_final, is.factor)]
+
+cat_vars <- names(base_final)[
+  sapply(base_final, function(x) is.factor(x) || is.character(x))
+]
+
+# V de Cramer
+cramers_v <- function(x, y){
+
+  tab <- table(x, y)
+
+  chi2 <- suppressWarnings(chisq.test(tab)$statistic)
+
+  n <- sum(tab)
+
+  min_dim <- min(nrow(tab)-1, ncol(tab)-1)
+
+  sqrt(chi2 / (n * min_dim))
+}
+
+# Combinaciones
+res <- data.frame()
+
+for(i in 1:(length(cat_vars)-1)){
+
+  for(j in (i+1):length(cat_vars)){
+
+    v1 <- cat_vars[i]
+    v2 <- cat_vars[j]
+
+    valor <- tryCatch(
+      cramers_v(base_final[[v1]], base_final[[v2]]),
+      error = function(e) NA
+    )
+
+    if(!is.na(valor) && valor > 0.5){
+
+      res <- rbind(
+        res,
+        data.frame(
+          variable1 = v1,
+          variable2 = v2,
+          correlacion = round(valor, 3)
+        )
+      )
+    }
+  }
+}
+
+res <- res |>
+  arrange(desc(correlacion))
+
+print(res)
+```
+
+
+```{r Guardar la base final}
+#install.packages("writexl") 
+#library(writexl)
+#write_xlsx(base_final, "base_final_definitiva.xlsx")
+```
+
+
+# PARTE PARA DESCRIPTIVOS:
+```{r Distribución de CCAA}
+prop_ccaa <- prop.table(table(base_final$CCAA, useNA = "ifany")) * 100
+prop_ccaa
+par(mar = c(10, 4, 4, 2))  
+
+barplot(prop_ccaa,
+        las = 2,
+        col = "grey",
+        cex.names = 0.8, 
+        main = "Distribución de CCAA (%)",
+        ylab = "Porcentaje")
+```
+
+```{r Normalidad Edad}
+hist(base_final$Edad,
+     main = "Histograma de Edad",
+     xlab = "Edad",
+     ylab = "Frecuencia",
+     col = "grey",
+     breaks = 30)
+```
+
+```{r Estado salud y Genero bivariante}
+ggplot(base_final, aes(x = Genero, fill = Est_Salud)) +
+  geom_bar(position = "fill", width = 0.2) +
+  scale_fill_manual(values = c(
+    "Malo" = "gray55",
+    "Bueno" = "gray75"
+  )) +
+  scale_y_continuous(labels = scales::percent) +
+  coord_flip() +
+  theme_minimal()
+```
+
+```{r Estado salud y CCAA bivariante}
+ggplot(base_final, aes(x = CCAA, fill = Est_Salud)) +
+  geom_bar(position = "fill") +
+  scale_fill_manual(values = c(
+    "Malo" = "gray55",
+    "Bueno" = "gray75"
+  )) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r Estado salud y Edad bivariante}
+ggplot(base_final, aes(x = Est_Salud, y = Edad, fill = Est_Salud)) +
+  geom_violin(alpha = 0.7, trim = FALSE) +
+  geom_boxplot(width = 0.12, fill = "white", color = "black", size = 0.8, outlier.shape = NA) +
+  geom_jitter(color = "gray35", width = 0.15, alpha = 0.3, size = 0.4) +
+  scale_fill_manual(values = c(
+    "Malo" = "gray55",
+    "Bueno" = "gray75"
+  )) +
+  theme_minimal()
+```
+
+
+
+
