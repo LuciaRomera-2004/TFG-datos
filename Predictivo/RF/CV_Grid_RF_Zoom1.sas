@@ -5,18 +5,18 @@ PROC IMPORT DATAFILE="D:\UCM\Curso 4\Resultados\Predictivo\Base_Final_Predictivo
     GETNAMES=YES;
 RUN;
 
-* 1. PREPARACIÓN Y CREACIÓN DE FOLDS (CV = 5);
+* 1. PREPARACIÃ“N Y CREACIÃ“N DE FOLDS (CV = 5);
 data datos_tfg;
     set datos_tfg;
     if Est_Salud = "Malo" then Salud_bin = 1;
     else if Est_Salud = "Bueno" then Salud_bin = 0;
 
-    /* Asignamos un fold aleatorio del 1 al 5 a cada observación */
+    /* Asignamos un fold aleatorio del 1 al 5 a cada observaciÃ³n */
     call streaminit(12345);
     fold = mod(_n_, 5) + 1; 
 run;
 
-* 2. GRID SEARCH CON VALIDACIÓN CRUZADA;
+* 2. GRID SEARCH CON VALIDACIÃ“N CRUZADA;
 %let mtry_list   = 4 5 6 7;          
 %let ntrees_list = 100 150 200 250 300;    
 %let train_list  = 40 45 50 55 60; 
@@ -61,7 +61,7 @@ run;
                     stop;
                 run;
 
-                * INTERACCIONES DE VALIDACIÓN CRUZADA (1 a 5);
+                * INTERACCIONES DE VALIDACIÃ“N CRUZADA (1 a 5);
                 %do f = 1 %to 5;
 
                     data datos_cv_temp;
@@ -70,7 +70,7 @@ run;
                         else partition_role = 1;               * Entrenar (80%);
                     run;
 
-                    * Ejecución calculando el decimal sobre la marcha en SAS;
+                    * EjecuciÃ³n calculando el decimal sobre la marcha en SAS;
                     proc hpforest data=datos_cv_temp
                         maxtrees=&valor_ntrees
                         vars_to_try=&valor_mtry
@@ -141,7 +141,7 @@ run;
 
 %grid_cv5;
 
-* 3. ORDENACIÓN Y PRESENTACIÓN DE RESULTADOS;
+* 3. ORDENACIÃ“N Y PRESENTACIÃ“N DE RESULTADOS;
 proc sort data=resultados_cv_final;
     by descending Mean_Se_Test;
 run;
