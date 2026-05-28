@@ -16,7 +16,7 @@ DATA datos_tfg;
     ELSE IF Est_Salud = "Bueno" THEN Salud_bin = 0;
 RUN;
 
-* 2. PARTICI覰 TRAIN;
+* 2. PARTICI脫N TRAIN;
 proc surveyselect data=datos_tfg
     out=particion
     samprate=0.8
@@ -31,9 +31,9 @@ data train test;
     else output test;
 run;
 
-* VALIDACI覰 CRUZADA MACRO;
+* VALIDACI脫N CRUZADA MACRO;
 
-* PASO 0. ASIGNAR FOLD A CADA OBSERVACI覰 DE TRAIN;
+* PASO 0. ASIGNAR FOLD A CADA OBSERVACI脫N DE TRAIN;
 proc surveyselect data=train
     out=train_cv
     method=srs
@@ -48,7 +48,7 @@ data train_cv;
 run;
 
 
-* PASO 1. TABLA VAC蛵A PARA GUARDAR RESULTADOS;
+* PASO 1. TABLA VAC脥聧A PARA GUARDAR RESULTADOS;
 data resultados_cv_arbol;
     length maxdepth minleafsize fold AUC Accuracy Sensibilidad Especificidad 8;
     stop;
@@ -58,14 +58,14 @@ run;
 * PASO 2. MACRO DE UN FOLD;
 %macro cv_hpsplit_fold(d=, l=, f=);
 
-    * Partici髇 del fold;
+    * Partici贸n del fold;
     data cv_train cv_val;
         set train_cv;
         if fold = &f then output cv_val;
         else output cv_train;
     run;
 
-    * Entrenar 醨bol y exportar c骴igo;
+    * Entrenar 谩rbol y exportar c贸digo;
     proc hpsplit data=cv_train seed=12345
         maxdepth=&d
         minleafsize=&l
@@ -79,7 +79,7 @@ run;
         code file="D:\UCM\cv_tree_&d._&l._f&f..sas";
     run;
 
-    * Aplicar 醨bol al fold de validaci髇;
+    * Aplicar 谩rbol al fold de validaci贸n;
     data score_val;
         set cv_val;
         %include "D:\UCM\cv_tree_&d._&l._f&f..sas";
@@ -98,7 +98,7 @@ run;
         where a.Salud_bin = 1 and b.Salud_bin = 0;
     quit;
 
-   * M閠ricas de clasificaci髇;
+   * M茅tricas de clasificaci贸n;
     proc sql noprint;
         select sum(case when Salud_bin=pred then 1 else 0 end) / count(*)
         into :acc_f trimmed
@@ -133,7 +133,7 @@ run;
 
 
 * PASO 3. MACRO GRID llama al macro de fold para cada
-           combinaci髇 de hiperpar醡etros;
+           combinaci贸n de hiperpar谩metros;
 %macro grid_cv_arbol;
 
     %let leaves = 5 8 10 12 15 18 20 25 30 40 50 75 100;
@@ -152,11 +152,11 @@ ods graphics off;
 %grid_cv_arbol;
 
 
-* PASO 4. TABLA RESUMEN (media y desv.t韕ica por arquitectura);
+* PASO 4. TABLA RESUMEN (media y desv.t铆pica por arquitectura);
 proc means data=resultados_cv_arbol mean std min max;
     class maxdepth minleafsize;
     var AUC Accuracy Sensibilidad Especificidad;
-    title "Resumen CV k=5 羴rbol de Clasificaci髇 (Zoom 2)";
+    title "Resumen CV k=5 脕聛rbol de Clasificaci贸n (Zoom 2)";
 run;
 
 
